@@ -14,9 +14,12 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://jobless:jobless@localhost:5432/jobless"
 
-    # Anthropic / Claude
-    anthropic_api_key: str = ""
-    claude_model: str = "claude-sonnet-4-5"
+    # LLM provider (OpenRouter, OpenAI-compatible API)
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "anthropic/claude-sonnet-4.5"
+    openrouter_site_url: str = ""
+    openrouter_app_name: str = "jobless"
 
     # Embeddings
     embedding_model_name: str = "all-MiniLM-L6-v2"

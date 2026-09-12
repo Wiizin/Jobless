@@ -1,9 +1,15 @@
-"""Profile + search-profile CRUD."""
+"""Profile + search-profile CRUD, plus CV-upload import.
+
+POST /profile/import-cv is the bulk alternative to the per-item POSTs
+below: one uploaded file is parsed into the same tables in one shot. See
+services/cv_import.py for the extraction (and the no-fabrication rule it
+has to hold to).
+"""
 from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,6 +27,9 @@ from app.schemas.profile import (
     SearchProfileOut,
     SkillIn,
 )
+from app.services import cv_import
+
+MAX_CV_UPLOAD_BYTES = 10 * 1024 * 1024  # ~10MB
 
 router = APIRouter(prefix="/profile", tags=["profile"], dependencies=[Depends(verify_session_token)])
 
@@ -49,6 +58,51 @@ async def create_profile(payload: ProfileIn, db: AsyncSession = Depends(get_db))
     db.add(profile)
     await db.commit()
     return await _load_profile(db, profile.id)
+
+
+@router.post("/import-cv", response_model=ProfileOut, status_code=201)
+async def import_cv(
+    file: UploadFile = File(...),
+    profile_id: uuid.UUID | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> Profile:
+    """Build (or re-sync) a profile from one uploaded CV.
+
+    No intermediate review screen — the parsed result is written straight to
+    the profile tables. With `profile_id`, the existing profile's
+    experiences/skills/education/certifications are replaced wholesale by
+    what the CV contains; without it, a new profile is created.
+    """
+    filename = file.filename or ""
+    if not filename.lower().endswith(cv_import.SUPPORTED_EXTENSIONS):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type. Supported: {', '.join(cv_import.SUPPORTED_EXTENSIONS)}",
+        )
+
+    # Starlette populates .size from the multipart parser, so oversized uploads
+    # are rejected before read() pulls the whole body into memory.
+    if file.size is not None and file.size > MAX_CV_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="CV file too large (limit 10MB)")
+
+    if profile_id is not None:
+        await _load_profile(db, profile_id)  # 404 before spending an LLM call
+
+    content = await file.read()
+    if len(content) > MAX_CV_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="CV file too large (limit 10MB)")
+
+    try:
+        raw_text = cv_import.extract_text(filename, content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    parsed = cv_import.parse_cv_text(raw_text)
+
+    try:
+        return await cv_import.apply_parsed_profile(db, profile_id, parsed)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{profile_id}", response_model=ProfileOut)

@@ -3,8 +3,8 @@
 Stage 1: cheap cosine-similarity filter via pgvector — drops offers whose
 embedding is far from the profile's embedding before any LLM call happens.
 
-Stage 2: Claude scores only what survives stage 1 and returns a structured
-MatchResult (schemas/match.py) — never free text.
+Stage 2: the LLM (via OpenRouter) scores only what survives stage 1 and
+returns a structured MatchResult (schemas/match.py) — never free text.
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from app.config import get_settings
 from app.db.models import Offer, OfferStatus, Profile
 from app.schemas.match import MatchResult
 from app.services.embeddings import embed_text, offer_embedding_text, profile_embedding_text
+from app.services.llm_client import call_structured
 
 settings = get_settings()
 
@@ -24,12 +25,6 @@ grounded reasoning, a list of missing_skills the offer requires that the profile
 and a list of dealbreakers (hard mismatches like required work authorization, seniority
 mismatch, or incompatible location/contract type). Base every claim strictly on the
 profile and offer text provided — never assume unstated candidate qualifications."""
-
-_TOOL_SCHEMA = {
-    "name": "submit_match_result",
-    "description": "Submit the structured match result for this offer.",
-    "input_schema": MatchResult.model_json_schema(),
-}
 
 
 async def stage1_filter(
@@ -69,34 +64,20 @@ def _build_profile_summary(profile: Profile) -> str:
 
 
 async def stage2_score(offer: Offer, profile: Profile) -> MatchResult:
-    """Call Claude with structured tool-use output to score one offer."""
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
+    """Call the LLM with structured tool-use output to score one offer."""
     profile_text = _build_profile_summary(profile)
     offer_text = f"Title: {offer.title}\nCompany: {offer.company}\nLocation: {offer.location}\n" \
                  f"Contract: {offer.contract_type}\nDescription:\n{offer.description}"
 
-    message = client.messages.create(
-        model=settings.claude_model,
+    payload = call_structured(
+        system_prompt=_SYSTEM_PROMPT,
+        user_content=f"CANDIDATE PROFILE:\n{profile_text}\n\nOFFER:\n{offer_text}",
+        tool_name="submit_match_result",
+        tool_description="Submit the structured match result for this offer.",
+        json_schema=MatchResult.model_json_schema(),
         max_tokens=1024,
-        system=_SYSTEM_PROMPT,
-        tools=[_TOOL_SCHEMA],
-        tool_choice={"type": "tool", "name": "submit_match_result"},
-        messages=[
-            {
-                "role": "user",
-                "content": f"CANDIDATE PROFILE:\n{profile_text}\n\nOFFER:\n{offer_text}",
-            }
-        ],
     )
-
-    for block in message.content:
-        if block.type == "tool_use" and block.name == "submit_match_result":
-            return MatchResult.model_validate(block.input)
-
-    raise RuntimeError("Claude did not return a submit_match_result tool call")
+    return MatchResult.model_validate(payload)
 
 
 async def score_offers(db: AsyncSession, profile: Profile, offers: list[Offer]) -> None:

@@ -6,14 +6,52 @@ full constraints; summary of what's here:
 ## Setup
 
 ```bash
-cp .env.example .env   # fill in ANTHROPIC_API_KEY at minimum
-docker compose up -d db
+cp .env.example .env   # fill in OPENROUTER_API_KEY and DATABASE_URL at minimum
 pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Or run everything via `docker compose up`.
+### Database (Supabase)
+
+The database is Supabase (managed Postgres with pgvector), not a local
+Postgres container.
+
+1. In Supabase → Project Settings → Database, copy the **Session Pooler**
+   connection string (host `aws-0-<region>.pooler.supabase.com`, port
+   `5432`). Do *not* use the Direct connection string — it's IPv6-only and
+   won't resolve from most networks/CI.
+2. Change the scheme from `postgres://` to `postgresql+asyncpg://` so
+   SQLAlchemy uses the asyncpg driver, and put the result in
+   `DATABASE_URL`.
+
+   ```
+   DATABASE_URL=postgresql+asyncpg://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+   ```
+3. Run this once in the Supabase SQL editor, **before** the first
+   `alembic upgrade head` — the offers table has a `vector` column and the
+   migration fails without the extension:
+
+   ```sql
+   create extension if not exists vector;
+   ```
+
+Then `alembic upgrade head`.
+
+The `db` service in `docker-compose.yml` is optional now — it's kept for
+running a throwaway local Postgres, but normal dev points `DATABASE_URL` at
+Supabase and skips it. `docker compose up backend` runs just the API (note
+the `backend` service still hardcodes a local `DATABASE_URL` override;
+remove or repoint that env var if you use compose against Supabase).
+
+### LLM provider (OpenRouter)
+
+All model calls go through OpenRouter's OpenAI-compatible API via the
+`openai` SDK — see `app/services/llm_client.py`. Set `OPENROUTER_API_KEY`;
+`OPENROUTER_MODEL` defaults to `anthropic/claude-sonnet-4.5` and can be
+pointed at any OpenRouter model that supports tool calling.
+`OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME` are optional attribution
+headers OpenRouter recommends.
 
 ## What's implemented
 
@@ -26,8 +64,8 @@ Or run everything via `docker compose up`.
   unconfigured adapter just returns `[]` so the pipeline degrades gracefully.
 - Normalizer, rapidfuzz-based cross-source deduplicator, embeddings
   (sentence-transformers), two-stage matching (pgvector cosine filter +
-  Claude structured scoring).
-- Generation (Claude structured output, hard-blocked from inventing profile
+  LLM structured scoring via OpenRouter).
+- Generation (LLM structured output, hard-blocked from inventing profile
   content — see `services/generation.py` docstring) and docx rendering.
 - Full CRUD/workflow routers: profile, offers (dashboard), documents
   (generate → edit → approve → download), applications (manual status
@@ -35,7 +73,7 @@ Or run everything via `docker compose up`.
 - APScheduler interval-based collection job (no Redis/worker queue).
 - Tests for the ingestion, matching, and generation slices
   (`tests/test_sources.py`, `test_matching.py`, `test_generation.py`), with
-  the Anthropic client mocked.
+  the OpenRouter client mocked.
 
 ## Not yet built
 

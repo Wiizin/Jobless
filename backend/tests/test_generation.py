@@ -1,9 +1,10 @@
 """Generation slice tests — focused on the no-fabrication guarantee.
 
-If Claude's structured response references an experience ID that was never
-in the profile catalog offered to it, generate_document must drop it
+If the model's structured response references an experience ID that was
+never in the profile catalog offered to it, generate_document must drop it
 rather than persist a fabricated reference.
 """
+import json
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -12,14 +13,13 @@ import pytest
 from app.schemas.document import GeneratedDocument
 
 
-def _fake_tool_use_message(payload: dict):
-    block = MagicMock()
-    block.type = "tool_use"
-    block.name = "submit_generated_document"
-    block.input = payload
-    message = MagicMock()
-    message.content = [block]
-    return message
+def _fake_tool_call_response(tool_name: str, payload: dict):
+    call = MagicMock()
+    call.function.name = tool_name
+    call.function.arguments = json.dumps(payload)
+    response = MagicMock()
+    response.choices[0].message.tool_calls = [call]
+    return response
 
 
 @pytest.mark.asyncio
@@ -63,10 +63,12 @@ async def test_generate_document_strips_unknown_experience_ids():
         "status": "pending_review",
     }
 
-    with patch("anthropic.Anthropic") as mock_anthropic_cls:
+    with patch("app.services.llm_client.get_client") as mock_get_client:
         mock_client = MagicMock()
-        mock_client.messages.create.return_value = _fake_tool_use_message(fake_payload)
-        mock_anthropic_cls.return_value = mock_client
+        mock_client.chat.completions.create.return_value = _fake_tool_call_response(
+            "submit_generated_document", fake_payload
+        )
+        mock_get_client.return_value = mock_client
 
         result = await generation.generate_document(offer, profile)
 

@@ -1,11 +1,11 @@
-"""Claude-driven generation of tailored CV emphasis / cover letter / Q&A content.
+"""LLM-driven generation of tailored CV emphasis / cover letter / Q&A content.
 
 HARD CONSTRAINT: this module must never invent profile content. The prompt
 enumerates the candidate's actual experiences/skills/education/certifications
-with stable IDs, and Claude is instructed to only select, reorder and
+with stable IDs, and the model is instructed to only select, reorder and
 rephrase from that list. `_validate_no_fabrication` then checks the
 returned experience IDs against what was actually offered before anything
-is persisted — if Claude references an ID that wasn't in the prompt, the
+is persisted — if the model references an ID that wasn't in the prompt, the
 generation is rejected rather than silently trusted.
 
 Every offer requirement not covered by the profile must show up in
@@ -19,6 +19,7 @@ import uuid
 from app.config import get_settings
 from app.db.models import Offer, Profile
 from app.schemas.document import GeneratedDocument
+from app.services.llm_client import call_structured
 
 settings = get_settings()
 
@@ -32,18 +33,9 @@ leave it out; that gap is tracked elsewhere, not papered over here.
 Respond ONLY by calling the `submit_generated_document` tool."""
 
 
-def _tool_schema() -> dict:
-    schema = GeneratedDocument.model_json_schema()
-    return {
-        "name": "submit_generated_document",
-        "description": "Submit the structured generated application content.",
-        "input_schema": schema,
-    }
-
-
 def _profile_catalog(profile: Profile) -> tuple[str, set[uuid.UUID]]:
     """Render the profile's real content with stable IDs, and return the set
-    of valid experience IDs Claude is allowed to reference."""
+    of valid experience IDs the model is allowed to reference."""
     lines = [f"Name: {profile.full_name}", f"Summary: {profile.summary or 'N/A'}"]
     lines.append("Skills: " + ", ".join(s.name for s in profile.skills))
 
@@ -74,10 +66,6 @@ def _validate_no_fabrication(doc: GeneratedDocument, valid_experience_ids: set[u
 
 
 async def generate_document(offer: Offer, profile: Profile) -> GeneratedDocument:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
     profile_catalog, valid_ids = _profile_catalog(profile)
     offer_text = (
         f"Title: {offer.title}\nCompany: {offer.company}\nLocation: {offer.location}\n"
@@ -85,27 +73,18 @@ async def generate_document(offer: Offer, profile: Profile) -> GeneratedDocument
     )
     missing = ", ".join(offer.missing_skills) if offer.missing_skills else "none flagged"
 
-    message = client.messages.create(
-        model=settings.claude_model,
+    payload = call_structured(
+        system_prompt=_SYSTEM_PROMPT,
+        user_content=(
+            f"CANDIDATE PROFILE (only source of truth):\n{profile_catalog}\n\n"
+            f"OFFER:\n{offer_text}\n\n"
+            f"Known missing skills (do not claim these): {missing}"
+        ),
+        tool_name="submit_generated_document",
+        tool_description="Submit the structured generated application content.",
+        json_schema=GeneratedDocument.model_json_schema(),
         max_tokens=2048,
-        system=_SYSTEM_PROMPT,
-        tools=[_tool_schema()],
-        tool_choice={"type": "tool", "name": "submit_generated_document"},
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"CANDIDATE PROFILE (only source of truth):\n{profile_catalog}\n\n"
-                    f"OFFER:\n{offer_text}\n\n"
-                    f"Known missing skills (do not claim these): {missing}"
-                ),
-            }
-        ],
     )
 
-    for block in message.content:
-        if block.type == "tool_use" and block.name == "submit_generated_document":
-            doc = GeneratedDocument.model_validate(block.input)
-            return _validate_no_fabrication(doc, valid_ids)
-
-    raise RuntimeError("Claude did not return a submit_generated_document tool call")
+    doc = GeneratedDocument.model_validate(payload)
+    return _validate_no_fabrication(doc, valid_ids)

@@ -1,7 +1,7 @@
-"""Structured output for Claude's stage-2 offer scoring.
+"""Structured output for the stage-2 offer scoring.
 
-This is the exact JSON shape requested from the LLM (Anthropic SDK tool-use /
-structured output) — never parsed from free text.
+This is the exact JSON shape requested from the LLM (OpenRouter tool call,
+OpenAI-compatible function schema) — never parsed from free text.
 """
 from pydantic import BaseModel, Field
 

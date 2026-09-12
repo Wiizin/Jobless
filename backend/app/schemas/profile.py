@@ -79,6 +79,27 @@ class ProfileOut(ProfileIn):
     certifications: list[CertificationOut] = []
 
 
+class ParsedProfile(BaseModel):
+    """What the LLM extracted from an uploaded CV — internal only, never a
+    request/response body.
+
+    Every field is optional/empty-defaulted on purpose: this is the shape the
+    model fills in, and a field the CV doesn't actually contain must come back
+    empty rather than guessed (see services/cv_import.py).
+    """
+
+    full_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    location: str | None = None
+    summary: str | None = None
+    links: dict[str, str] = {}
+    experiences: list[ExperienceIn] = []
+    skills: list[SkillIn] = []
+    education: list[EducationIn] = []
+    certifications: list[CertificationIn] = []
+
+
 class SearchProfileIn(BaseModel):
     name: str = "default"
     keywords: list[str] = []
