@@ -1,0 +1,84 @@
+.headline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.headlineMain {
+  min-width: 220px;
+  flex: 1;
+}
+
+.role {
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.company {
+  font-size: 13.5px;
+  color: var(--ink-dim);
+  margin-top: 3px;
+}
+
+.headlineSide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.metaLabel {
+  font-family: var(--font-display), sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.metaValue {
+  font-family: var(--font-mono), monospace;
+  font-size: 12.5px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.emptyNote {
+  font-size: 13px;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.errorRow {
+  margin-top: 12px;
+}

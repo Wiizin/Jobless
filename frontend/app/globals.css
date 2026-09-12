@@ -1,0 +1,251 @@
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Light values live on bare :root. The dark set is declared twice on purpose:
+   once under prefers-color-scheme (guarded so an explicit light choice wins)
+   and once under [data-theme="dark"] (so an explicit dark choice wins on a
+   light-preferring OS). No color gets its only definition inside a media
+   query.
+--------------------------------------------------------------------------- */
+
+:root {
+  --bg: #f5f6f2;
+  --surface: #ffffff;
+  --sidebar: #171f1d;
+  --sidebar-ink: #c9d2cd;
+  --sidebar-ink-dim: #7c8983;
+  --ink: #1b211f;
+  --ink-dim: #66716b;
+  --accent: #1d6f6a;
+  --accent-ink: #0e3d3a;
+  --accent-soft: #dceae8;
+  --good: #2e7d5b;
+  --good-soft: #dfede4;
+  --warn: #b96a2a;
+  --warn-soft: #f5e4d1;
+  --bad: #a8402f;
+  --bad-soft: #f5dcd6;
+  --line: #e2e4dc;
+  --code-bg: #ecead9;
+  --on-accent: #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(27, 33, 31, 0.06);
+  --shadow-md: 0 4px 16px rgba(27, 33, 31, 0.08);
+  --radius: 10px;
+  --radius-pill: 999px;
+  --sidebar-w: 232px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121715;
+    --surface: #182120;
+    --sidebar: #0d1211;
+    --sidebar-ink: #c9d2cd;
+    --sidebar-ink-dim: #657069;
+    --ink: #e7e9e4;
+    --ink-dim: #93a099;
+    --accent: #57c2b9;
+    --accent-ink: #beede8;
+    --accent-soft: #1b3432;
+    --good: #5fbf93;
+    --good-soft: #183129;
+    --warn: #e2a164;
+    --warn-soft: #3a2a18;
+    --bad: #e08b7c;
+    --bad-soft: #3a2320;
+    --line: #2a332f;
+    --code-bg: #1c2523;
+    --on-accent: #0d1211;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #121715;
+  --surface: #182120;
+  --sidebar: #0d1211;
+  --sidebar-ink: #c9d2cd;
+  --sidebar-ink-dim: #657069;
+  --ink: #e7e9e4;
+  --ink-dim: #93a099;
+  --accent: #57c2b9;
+  --accent-ink: #beede8;
+  --accent-soft: #1b3432;
+  --good: #5fbf93;
+  --good-soft: #183129;
+  --warn: #e2a164;
+  --warn-soft: #3a2a18;
+  --bad: #e08b7c;
+  --bad-soft: #3a2320;
+  --line: #2a332f;
+  --code-bg: #1c2523;
+  --on-accent: #0d1211;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--ink);
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shared primitives ------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+  color: var(--accent-soft);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-family: var(--font-display), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 76px;
+  line-height: 1.6;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

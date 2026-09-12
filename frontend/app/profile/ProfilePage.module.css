@@ -1,0 +1,143 @@
+.setupGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.setupBody {
+  display: grid;
+  gap: 12px;
+}
+
+.setupLead {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.identityText {
+  min-width: 0;
+  flex: 1;
+}
+
+.identityName {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.identityMeta {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.profileId {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  background: var(--code-bg);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  overflow-wrap: anywhere;
+}
+
+.itemList {
+  display: grid;
+  gap: 10px;
+}
+
+.item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 13px;
+}
+
+.itemTitle {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.itemMeta {
+  font-family: var(--font-mono), monospace;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  margin-top: 1px;
+}
+
+.itemBody {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+.bullets {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.emptyNote {
+  font-size: 13px;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+.formError {
+  color: var(--bad);
+  font-size: 12.5px;
+}
+
+.formNote {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+
+@media (max-width: 560px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}

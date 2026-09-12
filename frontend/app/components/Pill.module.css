@@ -1,0 +1,50 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.score {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  justify-content: center;
+  padding: 2px 8px;
+}
+
+.status {
+  font-family: var(--font-display), sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+.good {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.accent {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.neutral {
+  background: var(--code-bg);
+  color: var(--ink-dim);
+}

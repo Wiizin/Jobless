@@ -1,0 +1,276 @@
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+/* --- sidebar ------------------------------------------------------------ */
+
+.sidebar {
+  background: var(--sidebar);
+  color: var(--sidebar-ink);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 20px 14px;
+  gap: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.brandMark {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.brandDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  align-self: center;
+}
+
+.brandNote {
+  font-size: 11px;
+  color: var(--sidebar-ink-dim);
+  letter-spacing: 0.02em;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--sidebar-ink);
+  font-family: var(--font-display), sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+}
+
+.navItemActive {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.navIcon {
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.75;
+  flex: none;
+}
+
+.navLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--sidebar-ink-dim);
+  min-width: 24px;
+  text-align: center;
+  flex: none;
+}
+
+.navItemActive .badge {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* --- profile card ------------------------------------------------------- */
+
+.profileCard {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.profileCard:hover {
+  text-decoration: none;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.profileText {
+  min-width: 0;
+}
+
+.profileName {
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileMeta {
+  font-size: 11px;
+  color: var(--sidebar-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- main --------------------------------------------------------------- */
+
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 28px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbarTitles {
+  min-width: 0;
+}
+
+.topbarTitle {
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.topbarSubtitle {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+}
+
+.topbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.body {
+  padding: 22px 28px 48px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- narrow ------------------------------------------------------------- */
+
+@media (max-width: 820px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .brand {
+    padding: 0;
+    flex: none;
+  }
+
+  .brandNote {
+    display: none;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex: none;
+    gap: 4px;
+  }
+
+  .navItem {
+    padding: 7px 10px;
+    white-space: nowrap;
+  }
+
+  .navIcon {
+    display: none;
+  }
+
+  .profileCard {
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 0;
+    padding-left: 14px;
+    flex: none;
+  }
+
+  .profileText {
+    display: none;
+  }
+
+  .topbar {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+  }
+
+  .body {
+    padding: 18px 16px 40px;
+  }
+}
