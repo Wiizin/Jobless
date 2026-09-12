@@ -24,12 +24,20 @@ EMBEDDING_DIM = 384  # must match app.config.Settings.embedding_dim
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    offer_status = postgresql.ENUM("new", "scored", "reviewed", "dismissed", name="offerstatus")
-    document_type = postgresql.ENUM("cv", "cover_letter", "qa", name="documenttype")
-    document_status = postgresql.ENUM("pending_review", "approved", name="documentstatus")
+    # create_type=False: these are created explicitly just below, so the
+    # create_table calls that use them as column types must not re-emit
+    # CREATE TYPE (which fails with DuplicateObjectError).
+    offer_status = postgresql.ENUM(
+        "new", "scored", "reviewed", "dismissed", name="offerstatus", create_type=False
+    )
+    document_type = postgresql.ENUM("cv", "cover_letter", "qa", name="documenttype", create_type=False)
+    document_status = postgresql.ENUM(
+        "pending_review", "approved", name="documentstatus", create_type=False
+    )
     application_status = postgresql.ENUM(
         "not_applied", "applied", "interviewing", "rejected", "offer_received", "withdrawn",
         name="applicationstatus",
+        create_type=False,
     )
     bind = op.get_bind()
     offer_status.create(bind, checkfirst=True)

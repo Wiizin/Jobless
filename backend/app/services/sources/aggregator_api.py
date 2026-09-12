@@ -1,12 +1,14 @@
 """Adzuna-style job-aggregator API adapter (official, key-based, no scraping)."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 
 from app.config import get_settings
+from app.services.cache import build_cache_key, cache_get, cache_set
 
 settings = get_settings()
 
@@ -21,6 +23,13 @@ async def fetch_offers(
     """Fetch raw offers from the aggregator API (e.g. Adzuna /search/{page})."""
     if not settings.aggregator_app_id or not settings.aggregator_app_key:
         return []
+
+    cache_key = build_cache_key(
+        "aggregator_api", ",".join(keywords), location or "", country, str(page)
+    )
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return json.loads(cached)
 
     params = {
         "app_id": settings.aggregator_app_id,
@@ -42,7 +51,10 @@ async def fetch_offers(
             raise AggregatorAPIError(f"aggregator_api request failed: {exc}") from exc
 
     data = resp.json()
-    return data.get("results", [])
+    results = data.get("results", [])
+
+    await cache_set(cache_key, json.dumps(results), settings.source_cache_ttl_seconds)
+    return results
 
 
 def to_common_dict(raw: dict[str, Any]) -> dict[str, Any]:

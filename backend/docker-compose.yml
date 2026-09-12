@@ -18,6 +18,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - jobless_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: .
     restart: unless-stopped
@@ -25,10 +39,13 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://jobless:jobless@db:5432/jobless
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./app:/app/app
@@ -36,3 +53,4 @@ services:
 
 volumes:
   jobless_pgdata:
+  jobless_redisdata:

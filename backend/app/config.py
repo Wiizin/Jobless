@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     openrouter_site_url: str = ""
     openrouter_app_name: str = "jobless"
 
+    # Cache (local Redis)
+    redis_url: str = "redis://localhost:6379/0"
+    cache_prompt_version: str = "v1"  # bump manually whenever a prompt/embedding template changes
+    match_cache_ttl_seconds: int = 60 * 60 * 24 * 30  # 30 days
+    source_cache_ttl_seconds: int = 60 * 10  # 10 minutes
+
     # Embeddings
     embedding_model_name: str = "all-MiniLM-L6-v2"
     embedding_dim: int = 384

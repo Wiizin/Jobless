@@ -6,6 +6,7 @@ Kept out of scheduler.py so it can be invoked directly (tests, a manual
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -74,8 +75,9 @@ async def collect_for_search_profile(search_profile_id: str) -> int:
 
         stored = 0
         for offer_schema in unique:
-            embedding = embed_text(
-                offer_embedding_text(offer_schema.title, offer_schema.company, offer_schema.description)
+            embedding = await asyncio.to_thread(
+                embed_text,
+                offer_embedding_text(offer_schema.title, offer_schema.company, offer_schema.description),
             )
             offer_row = OfferModel(
                 source=offer_schema.source,

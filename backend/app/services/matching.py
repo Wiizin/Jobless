@@ -8,12 +8,15 @@ returns a structured MatchResult (schemas/match.py) — never free text.
 """
 from __future__ import annotations
 
+import asyncio
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.db.models import Offer, OfferStatus, Profile
 from app.schemas.match import MatchResult
+from app.services.cache import build_cache_key, cache_get, cache_set
 from app.services.embeddings import embed_text, offer_embedding_text, profile_embedding_text
 from app.services.llm_client import call_structured
 
@@ -35,7 +38,7 @@ async def stage1_filter(
     skills = [s.name for s in profile.skills]
     titles = [e.title for e in profile.experiences]
     profile_text = profile_embedding_text(profile.summary or "", skills, titles)
-    profile_vector = embed_text(profile_text)
+    profile_vector = await asyncio.to_thread(embed_text, profile_text)
 
     # cosine_distance = 1 - cosine_similarity, so a similarity threshold
     # becomes a max-distance filter.
@@ -64,10 +67,27 @@ def _build_profile_summary(profile: Profile) -> str:
 
 
 async def stage2_score(offer: Offer, profile: Profile) -> MatchResult:
-    """Call the LLM with structured tool-use output to score one offer."""
+    """Call the LLM with structured tool-use output to score one offer.
+
+    Scoring the same offer against the same profile is deterministic enough
+    to cache, and it's the only paid call in the pipeline. The key covers the
+    offer description and the rendered profile summary rather than just the
+    IDs, so editing either side rescores instead of returning a stale hit.
+    """
     profile_text = _build_profile_summary(profile)
     offer_text = f"Title: {offer.title}\nCompany: {offer.company}\nLocation: {offer.location}\n" \
                  f"Contract: {offer.contract_type}\nDescription:\n{offer.description}"
+
+    cache_key = build_cache_key(
+        "match",
+        settings.cache_prompt_version,
+        str(offer.id),
+        offer.description or "",
+        profile_text,
+    )
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return MatchResult.model_validate_json(cached)
 
     payload = call_structured(
         system_prompt=_SYSTEM_PROMPT,
@@ -77,7 +97,9 @@ async def stage2_score(offer: Offer, profile: Profile) -> MatchResult:
         json_schema=MatchResult.model_json_schema(),
         max_tokens=1024,
     )
-    return MatchResult.model_validate(payload)
+    result = MatchResult.model_validate(payload)
+    await cache_set(cache_key, result.model_dump_json(), settings.match_cache_ttl_seconds)
+    return result
 
 
 async def score_offers(db: AsyncSession, profile: Profile, offers: list[Offer]) -> None:

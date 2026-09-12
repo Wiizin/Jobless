@@ -5,12 +5,14 @@ the ATS vendors themselves for each company's board — not scraping.
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 
 from app.config import get_settings
+from app.services.cache import build_cache_key, cache_get, cache_set
 
 settings = get_settings()
 
@@ -20,7 +22,17 @@ class ATSBoardError(RuntimeError):
 
 
 async def fetch_greenhouse_offers(board_token: str) -> list[dict[str, Any]]:
-    """GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true"""
+    """GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true
+
+    Board listings change slowly relative to how often the scheduler runs, so
+    the raw response is cached briefly (source_cache_ttl_seconds) to avoid
+    re-hitting the vendor on every collection pass.
+    """
+    cache_key = build_cache_key("ats_boards", "greenhouse", board_token)
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return json.loads(cached)
+
     url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs"
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
@@ -32,11 +44,18 @@ async def fetch_greenhouse_offers(board_token: str) -> list[dict[str, Any]]:
     jobs = data.get("jobs", [])
     for job in jobs:
         job["_board_token"] = board_token
+
+    await cache_set(cache_key, json.dumps(jobs), settings.source_cache_ttl_seconds)
     return jobs
 
 
 async def fetch_lever_offers(company_slug: str) -> list[dict[str, Any]]:
     """GET https://api.lever.co/v0/postings/{slug}?mode=json"""
+    cache_key = build_cache_key("ats_boards", "lever", company_slug)
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return json.loads(cached)
+
     url = f"https://api.lever.co/v0/postings/{company_slug}"
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
@@ -47,6 +66,8 @@ async def fetch_lever_offers(company_slug: str) -> list[dict[str, Any]]:
     data = resp.json()
     for job in data:
         job["_company_slug"] = company_slug
+
+    await cache_set(cache_key, json.dumps(data), settings.source_cache_ttl_seconds)
     return data
 
 

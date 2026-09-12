@@ -6,12 +6,14 @@ No scraping: this must only call documented, authorized endpoints.
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 
 from app.config import get_settings
+from app.services.cache import build_cache_key, cache_get, cache_set
 
 settings = get_settings()
 
@@ -31,6 +33,11 @@ async def fetch_offers(keywords: list[str], location: str | None = None) -> list
     if not settings.agency_api_base_url or not settings.agency_api_key:
         return []
 
+    cache_key = build_cache_key("agency_api", ",".join(keywords), location or "")
+    cached = await cache_get(cache_key)
+    if cached is not None:
+        return json.loads(cached)
+
     params = {"q": " ".join(keywords)}
     if location:
         params["location"] = location
@@ -49,7 +56,10 @@ async def fetch_offers(keywords: list[str], location: str | None = None) -> list
             raise AgencyAPIError(f"agency_api request failed: {exc}") from exc
 
     data = resp.json()
-    return data.get("results", [])
+    results = data.get("results", [])
+
+    await cache_set(cache_key, json.dumps(results), settings.source_cache_ttl_seconds)
+    return results
 
 
 def to_common_dict(raw: dict[str, Any]) -> dict[str, Any]:

@@ -8,6 +8,7 @@ See routers/documents.py for generation.
 """
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -117,8 +118,9 @@ async def create_manual_offer(
     if not dedupe_batch([candidate], existing_offers=existing):
         raise HTTPException(status_code=409, detail="This looks like a duplicate of an offer already stored")
 
-    embedding = embed_text(
-        offer_embedding_text(candidate.title, candidate.company, candidate.description)
+    embedding = await asyncio.to_thread(
+        embed_text,
+        offer_embedding_text(candidate.title, candidate.company, candidate.description),
     )
 
     offer_row = Offer(
